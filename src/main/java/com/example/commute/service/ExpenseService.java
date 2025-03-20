@@ -8,8 +8,11 @@ import com.example.commute.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,16 +47,30 @@ public class ExpenseService {
 
     // 게시글 작성
     public ExpenseDto createExpense(ExpenseDto expenseDto, User user) {
-        if (user == null || user.getId() == null || !userRepository.existsById(user.getId())) {
-            throw new IllegalArgumentException("유효한 사용자 정보가 없습니다.");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
+        }
+
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("사용자 정보가 누락되었습니다.");
+        }
+
+        if (!userRepository.existsById(user.getId())) {
+            throw new IllegalArgumentException("존재하지 않는 사용자입니다.");
         }
 
         Expense expense = new Expense();
         expense.setTitle(expenseDto.getTitle());
         expense.setCategory(Expense.Category.valueOf(expenseDto.getCategory()));
         expense.setContent(expenseDto.getContent());
-        expense.setAmount(expenseDto.getAmount());
-        expense.setUser(user);  // User 연결
+        expense.setAmount(expenseDto.getTotalAmount());
+        expense.setUser(user);
+
+        // photoUrls가 null이 아니면 설정
+        if (expenseDto.getPhotoUrls() != null && !expenseDto.getPhotoUrls().isEmpty()) {
+            expense.setPhotoUrls(expenseDto.getPhotoUrls()); // 여러 URL을 그대로 저장
+        }
 
         expenseRepository.save(expense);
 
@@ -71,9 +88,13 @@ public class ExpenseService {
 
         expense.setTitle(expenseDto.getTitle());
         expense.setContent(expenseDto.getContent());
-        expense.setAmount(expenseDto.getAmount());
+        expense.setAmount(expenseDto.getTotalAmount());  // 합산된 금액만 사용
         expense.setCategory(Expense.Category.valueOf(expenseDto.getCategory()));
-        expense.setPhotoUrl(expenseDto.getPhotoUrl());
+
+        // 단일 photoUrl 대신, 여러 파일을 처리할 수 있도록 수정
+        if (expenseDto.getPhotoUrls() != null && !expenseDto.getPhotoUrls().isEmpty()) {
+            expense.setPhotoUrls(Collections.singletonList(String.join(",", expenseDto.getPhotoUrls()))); // 여러 URL을 콤마로 구분하여 저장
+        }
 
         Expense updatedExpense = expenseRepository.save(expense);
         return convertToDto(updatedExpense);
@@ -104,7 +125,7 @@ public class ExpenseService {
     // 합산된 금액을 계산하는 함수 (ExpenseDto 리스트에서 계산)
     public Double calculateTotalAmountForDtos(List<ExpenseDto> expenses) {
         return expenses.stream()
-                .mapToDouble(ExpenseDto::getAmount)
+                .mapToDouble(ExpenseDto::getTotalAmount)  // totalAmount로 합계 계산
                 .sum();
     }
 
@@ -121,9 +142,9 @@ public class ExpenseService {
                 .id(expense.getId())
                 .title(expense.getTitle())
                 .content(expense.getContent())
-                .amount(expense.getAmount())
+                .totalAmount(expense.getAmount())
                 .category(String.valueOf(expense.getCategory()))
-                .photoUrl(expense.getPhotoUrl())
+                .photoUrls(expense.getPhotoUrls())
                 .createdAt(expense.getCreatedAt())
                 .build();
     }
@@ -134,9 +155,9 @@ public class ExpenseService {
                 .id(expenseDto.getId())
                 .title(expenseDto.getTitle())
                 .content(expenseDto.getContent())
-                .amount(expenseDto.getAmount())
+                .amount(expenseDto.getTotalAmount())
                 .category(Expense.Category.valueOf(expenseDto.getCategory()))
-                .photoUrl(expenseDto.getPhotoUrl())
+                .photoUrls(expenseDto.getPhotoUrls()) //
                 .createdAt(expenseDto.getCreatedAt())
                 .build();
     }

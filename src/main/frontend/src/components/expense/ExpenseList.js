@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 const ExpenseList = () => {
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState([]); // 기본값은 빈 배열로 설정
   const [totalAmount, setTotalAmount] = useState(0);
   const navigate = useNavigate();
 
@@ -11,10 +11,24 @@ const ExpenseList = () => {
     fetch("/api/expenses")
       .then((res) => res.json())
       .then((data) => {
-        setExpenses(data);
-        setTotalAmount(
-          data.reduce((total, expense) => total + expense.amount, 0)
-        );
+        if (Array.isArray(data)) {
+          setExpenses(data);
+          setTotalAmount(
+            data.reduce(
+              (total, expense) =>
+                total +
+                (Array.isArray(expense.amounts)
+                  ? expense.amounts.reduce((a, b) => a + b, 0)
+                  : expense.amount),
+              0
+            )
+          );
+        } else {
+          console.error("Received data is not an array:", data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching expenses:", error);
       });
   }, []);
 
@@ -22,13 +36,17 @@ const ExpenseList = () => {
     <ExpenseContainer>
       <h2>경비 관리</h2>
       <ExpenseListWrapper>
-        {expenses.map((expense) => (
-          <ExpenseItem key={expense.id}>
-            <ExpenseTitle>{expense.title}</ExpenseTitle>
-            <ExpenseContent>{expense.content}</ExpenseContent>
-            <ExpenseAmount>금액: {expense.amount} 원</ExpenseAmount>
-          </ExpenseItem>
-        ))}
+        {expenses && expenses.length > 0 ? ( // expenses가 배열이고 길이가 0보다 크면 map()
+          expenses.map((expense) => (
+            <ExpenseItem key={expense.id}>
+              <ExpenseTitle>{expense.title}</ExpenseTitle>
+              <ExpenseContent>{expense.content}</ExpenseContent>
+              <ExpenseAmount>금액: {expense.amount} 원</ExpenseAmount>
+            </ExpenseItem>
+          ))
+        ) : (
+          <p>등록된 경비 항목이 없습니다.</p>
+        )}
       </ExpenseListWrapper>
       <TotalAmount>전체 합계: {totalAmount} 원</TotalAmount>
       <AddButton onClick={() => navigate("/create")}>+</AddButton>

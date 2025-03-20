@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -32,11 +33,13 @@ public class Expense {
     @Column(nullable = false)
     private Category category;
 
-    @Column(length = 255) // 사진 URL은 일반적으로 길이가 길지 않으므로 255자 제한
-    private String photoUrl;
+    @ElementCollection // 여러 URL을 저장할 때 @ElementCollection을 사용
+    @CollectionTable(name = "expense_photos", joinColumns = @JoinColumn(name = "expense_id"))
+    @Column(name = "photo_url", length = 255)
+    private List<String> photoUrls;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "user_id") // user_id를 직접 매핑하도록 수정
     private User user;
 
     @Column(name = "created_at", nullable = false)
@@ -45,7 +48,6 @@ public class Expense {
 
     @PrePersist
     public void prePersist() {
-        // 엔티티가 저장되기 전에 createdAt 필드를 현재 시간으로 설정
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }

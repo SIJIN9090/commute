@@ -60,7 +60,12 @@ dependencies {
 	runtimeOnly 'com.mysql:mysql-connector-j'  // MySQL 사용 시
 	implementation 'mysql:mysql-connector-java:8.0.29'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.0'
+
+	// Spring Security 추가
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()

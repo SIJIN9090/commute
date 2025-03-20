@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -41,24 +43,34 @@ public class ExpenseController {
         }
     }
 
-    // 게시글 작성 (파일 업로드 시 ExpenseDto 반환)
+    // 게시글 작성
     @PostMapping
     public ResponseEntity<ExpenseDto> createExpense(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @RequestParam("expenseDto") String expenseDtoJson,
             @AuthenticationPrincipal User user) throws IOException {
 
-        ExpenseDto expenseDto = new ObjectMapper().readValue(expenseDtoJson, ExpenseDto.class);
+        ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
+        if (expenseDto.getTotalAmount() == null) {
+            expenseDto.setTotalAmount(0.0);
+        }
 
-        // 파일 업로드가 있을 경우, 업로드 경로 설정
-        if (!file.isEmpty()) {
-            String photoUrl = uploadFile(file);  // 파일 업로드 후 URL 반환
-            expenseDto.setPhotoUrl(photoUrl);
+        if (files != null && !files.isEmpty()) {
+            List<String> photoUrls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                String photoUrl = uploadFile(file);
+                if (!photoUrl.isEmpty()) { // 빈 문자열이 아닐 경우에만 추가
+                    photoUrls.add(photoUrl);
+                }
+            }
+            expenseDto.setPhotoUrls(photoUrls);
         }
 
         ExpenseDto createdExpense = expenseService.createExpense(expenseDto, user);
         return ResponseEntity.ok(createdExpense);
     }
+
+
 
     // 특정 게시글 조회
     @GetMapping("/{id}")
@@ -70,21 +82,23 @@ public class ExpenseController {
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseDto> updateExpense(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("expenseDto") String expenseDtoJson,
             @AuthenticationPrincipal User user) throws IOException {
 
-        // ExpenseDto 객체로 변환
         ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
+        ExpenseDto existingExpense = expenseService.getExpenseById(id);
 
-        // 파일이 업로드 되었다면, 새로운 URL 설정
-        if (!file.isEmpty()) {
-            String photoUrl = uploadFile(file);  // 파일 업로드 후 URL 반환
-            expenseDto.setPhotoUrl(photoUrl);
+        if (file != null && !file.isEmpty()) {
+            String photoUrl = uploadFile(file);
+            expenseDto.setPhotoUrls(List.of(photoUrl));
+        } else {
+            expenseDto.setPhotoUrls(existingExpense.getPhotoUrls()); // 기존 사진 URL 유지
         }
 
         return ResponseEntity.ok(expenseService.updateExpense(id, expenseDto, user));
     }
+
 
     // 게시글 삭제 (관리자만 삭제 가능)
     @DeleteMapping("/{id}")
@@ -115,27 +129,24 @@ public class ExpenseController {
     private String uploadDir;
 
     // 파일 업로드 API
-    public String uploadFile(MultipartFile file) throws IOException {
-        // 파일이 없으면 에러 반환
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("파일을 선택해주세요.");
+    private String uploadFile(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return ""; // 파일이 비어있을 경우 빈 문자열 반환
         }
 
-        // 파일 경로 설정
-        String fileName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
+        String originalFileName = file.getOriginalFilename();
+        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        String fileName = UUID.randomUUID().toString() + fileExtension;
         Path path = Paths.get(uploadDir + fileName);
 
-        // 파일 저장
         Files.createDirectories(path.getParent());
         Files.write(path, file.getBytes());
 
-        // 파일 URL 반환 (로컬 서버 기준)
         return "/uploads/" + fileName;
     }
 
     // ExpenseDto를 JSON 문자열에서 객체로 변환하는 메서드 (예시로 ObjectMapper 사용)
     private ExpenseDto convertJsonToExpenseDto(String expenseDtoJson) throws IOException {
-        // Jackson ObjectMapper를 사용하여 JSON 문자열을 ExpenseDto로 변환
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(expenseDtoJson, ExpenseDto.class);
     }
