@@ -1,13 +1,13 @@
-package com.example.commuteA;
+package com.example.commute;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class CommuteAApplication {
+public class CommuteApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(CommuteAApplication.class, args);
+		SpringApplication.run(CommuteApplication.class, args);
 	}
 
 }

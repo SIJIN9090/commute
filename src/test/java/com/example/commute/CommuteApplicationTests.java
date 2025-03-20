@@ -1,10 +1,10 @@
-package com.example.commuteA;
+package com.example.commute;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class CommuteAApplicationTests {
+class CommuteApplicationTests {
 
 	@Test
 	void contextLoads() {
