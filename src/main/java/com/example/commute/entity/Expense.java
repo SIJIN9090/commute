@@ -40,7 +40,7 @@ public class Expense {
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "user_id") // user_id를 직접 매핑하도록 수정
-    private User user;
+    private Member user;
 
     @Column(name = "created_at", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

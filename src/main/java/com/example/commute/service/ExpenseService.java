@@ -2,7 +2,7 @@ package com.example.commute.service;
 
 import com.example.commute.dto.ExpenseDto;
 import com.example.commute.entity.Expense;
-import com.example.commute.entity.User;
+import com.example.commute.entity.Member;
 import com.example.commute.repository.ExpenseRepository;
 import com.example.commute.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class ExpenseService {
     }
 
     // 특정 사용자가 작성한 게시글 목록 조회 (페이지네이션 추가)
-    public Page<ExpenseDto> getUserExpenses(User user, Pageable pageable) {
+    public Page<ExpenseDto> getUserExpenses(Member user, Pageable pageable) {
         if (user == null) {
             throw new IllegalArgumentException("유효한 사용자 정보가 없습니다.");
         }
@@ -46,7 +46,7 @@ public class ExpenseService {
 
 
     // 게시글 작성
-    public ExpenseDto createExpense(ExpenseDto expenseDto, User user) {
+    public ExpenseDto createExpense(ExpenseDto expenseDto, Member user) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
@@ -78,7 +78,7 @@ public class ExpenseService {
     }
 
     // 게시글 수정
-    public ExpenseDto updateExpense(Long id, ExpenseDto expenseDto, User user) {
+    public ExpenseDto updateExpense(Long id, ExpenseDto expenseDto, Member user) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
@@ -101,7 +101,7 @@ public class ExpenseService {
     }
 
     // 게시글 삭제
-    public void deleteExpense(Long id, User user) {
+    public void deleteExpense(Long id, Member user) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 

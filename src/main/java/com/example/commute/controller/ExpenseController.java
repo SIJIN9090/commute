@@ -2,7 +2,7 @@ package com.example.commute.controller;
 
 import com.example.commute.dto.ExpenseDto;
 import com.example.commute.entity.Expense;
-import com.example.commute.entity.User;
+import com.example.commute.entity.Member;
 import com.example.commute.service.ExpenseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class ExpenseController {
     // 게시글 목록 조회 (관리자는 전체 목록, 일반 사용자는 자신만 조회)
     @GetMapping
     public ResponseEntity<Page<ExpenseDto>> getAllExpenses(
-            @AuthenticationPrincipal User user,
+            @AuthenticationPrincipal Member user,
             @PageableDefault(size = 10) Pageable pageable) {  // Pageable을 자동으로 주입받음
 
         if (user.isAdmin()) {
@@ -48,7 +48,7 @@ public class ExpenseController {
     public ResponseEntity<ExpenseDto> createExpense(
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @RequestParam("expenseDto") String expenseDtoJson,
-            @AuthenticationPrincipal User user) throws IOException {
+            @AuthenticationPrincipal Member user) throws IOException {
 
         ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
         if (expenseDto.getTotalAmount() == null) {
@@ -70,8 +70,6 @@ public class ExpenseController {
         return ResponseEntity.ok(createdExpense);
     }
 
-
-
     // 특정 게시글 조회
     @GetMapping("/{id}")
     public ResponseEntity<ExpenseDto> getExpenseById(@PathVariable Long id) {
@@ -84,7 +82,7 @@ public class ExpenseController {
             @PathVariable Long id,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("expenseDto") String expenseDtoJson,
-            @AuthenticationPrincipal User user) throws IOException {
+            @AuthenticationPrincipal Member user) throws IOException {
 
         ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
         ExpenseDto existingExpense = expenseService.getExpenseById(id);
@@ -102,7 +100,7 @@ public class ExpenseController {
 
     // 게시글 삭제 (관리자만 삭제 가능)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @AuthenticationPrincipal User user) {
+    public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @AuthenticationPrincipal Member user) {
         if (!user.isAdmin()) {
             return ResponseEntity.status(401).build();  // 401 Unauthorized
         }

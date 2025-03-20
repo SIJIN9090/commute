@@ -83,48 +83,36 @@ const ExpenseWrite = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const totalAmount = calculateTotalAmount(); // 금액 합계를 계산
+    const totalAmount = calculateTotalAmount();
     if (totalAmount === 0) {
       alert("금액이 0이어서는 안 됩니다.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("expenseDto", JSON.stringify({ ...expense, totalAmount })); // amounts를 제외하고 totalAmount만 포함
+    formData.append("expenseDto", JSON.stringify({ ...expense, totalAmount }));
 
-    // 여러 개의 파일 추가
     expense.photoUrls.forEach((file) => {
       formData.append("files", file);
     });
 
-    console.log("📢 전송 데이터 확인:");
-    console.log("Expense DTO:", { ...expense, totalAmount });
-    console.log("Photo Files:", expense.photoUrls);
-
-    // 🔥 토큰 가져오기
     const accessToken = localStorage.getItem("access_token");
-    console.log("🛠️ accessToken:", accessToken);
-
     try {
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`, // ✅ 토큰 추가
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: formData, // ⚠️ 'Content-Type'을 설정하지 않음 (자동 처리됨)
+        body: formData,
       });
 
-      console.log("📢 서버 응답 상태 코드:", response.status);
       if (!response.ok) {
         const errorMessage = await response.text();
-        console.error("❌ 서버 응답 오류:", errorMessage);
         alert(`서버 오류 발생: ${errorMessage}`);
         return;
       }
 
       const result = await response.json();
-      console.log("✅ 서버 응답 성공:", result);
-
       alert("게시물이 작성되었습니다.");
       setExpense({
         title: "",

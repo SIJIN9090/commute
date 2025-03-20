@@ -8,35 +8,61 @@ const ExpenseList = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/expenses")
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchExpenses = async () => {
+      const token = localStorage.getItem("token"); // 로컬 스토리지에서 JWT 토큰 가져오기
+
+      if (!token) {
+        console.error("No token found. Redirecting to login.");
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/expenses", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`, // Authorization 헤더에 토큰 추가
+            "Content-Type": "application/json", // JSON 응답을 받기 위한 설정
+          },
+        });
+
+        if (response.status === 403) {
+          console.error("403 Forbidden: You do not have permission.");
+          alert("접근 권한이 없습니다. 로그인 후 다시 시도해주세요.");
+          navigate("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Error fetching expenses: ${response.status}`);
+        }
+
+        const data = await response.json();
+
         if (Array.isArray(data)) {
-          setExpenses(data);
+          setExpenses(data); // 배열이면 바로 설정
           setTotalAmount(
             data.reduce(
-              (total, expense) =>
-                total +
-                (Array.isArray(expense.amounts)
-                  ? expense.amounts.reduce((a, b) => a + b, 0)
-                  : expense.amount),
+              (total, expense) => total + (expense.amount || 0), // `amount`가 숫자라고 가정
               0
             )
           );
         } else {
-          console.error("Received data is not an array:", data);
+          console.error("Received data is not in expected format:", data);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching expenses:", error);
-      });
-  }, []);
+      }
+    };
+
+    fetchExpenses();
+  }, [navigate]); // `navigate`가 변경될 때만 실행
 
   return (
     <ExpenseContainer>
       <h2>경비 관리</h2>
       <ExpenseListWrapper>
-        {expenses && expenses.length > 0 ? ( // expenses가 배열이고 길이가 0보다 크면 map()
+        {expenses && expenses.length > 0 ? (
           expenses.map((expense) => (
             <ExpenseItem key={expense.id}>
               <ExpenseTitle>{expense.title}</ExpenseTitle>
