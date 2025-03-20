@@ -16,7 +16,7 @@ import java.util.Collections;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "member")
+@Table(name = "MEMBER")
 public class Member implements UserDetails {
 
     @Id

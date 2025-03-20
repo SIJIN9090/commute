@@ -4,7 +4,7 @@ import com.example.commute.dto.LoginRequestDto;
 import com.example.commute.dto.SignupRequestDto;
 import com.example.commute.entity.Member;
 import com.example.commute.enums.RoleType;
-import com.example.commute.repository.UserRepository;
+import com.example.commute.repository.memberRepository;
 import com.example.commute.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +27,7 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private UserRepository userRepository;
+    private memberRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;

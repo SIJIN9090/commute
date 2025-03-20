@@ -4,7 +4,7 @@ import com.example.commute.dto.ExpenseDto;
 import com.example.commute.entity.Expense;
 import com.example.commute.entity.Member;
 import com.example.commute.repository.ExpenseRepository;
-import com.example.commute.repository.UserRepository;
+import com.example.commute.repository.memberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
-    private final UserRepository userRepository;
+    private final memberRepository userRepository;
 
     // 모든 게시글 목록 조회 (페이지네이션 추가)
     public Page<ExpenseDto> getAllExpenses(Pageable pageable) {

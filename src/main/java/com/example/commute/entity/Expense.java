@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "expense")
+@Table(name = "EXPENSE")
 public class Expense {
 
     @Id
@@ -33,16 +33,16 @@ public class Expense {
     @Column(nullable = false)
     private Category category;
 
-    @ElementCollection // 여러 URL을 저장할 때 @ElementCollection을 사용
-    @CollectionTable(name = "expense_photos", joinColumns = @JoinColumn(name = "expense_id"))
-    @Column(name = "photo_url", length = 255)
+    @ElementCollection
+    @CollectionTable(name = "EXPENSE_PHOTOS", joinColumns = @JoinColumn(name = "EXPENSE_ID"))
+    @Column(name = "PHOTO_URL", length = 255)
     private List<String> photoUrls;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "user_id") // user_id를 직접 매핑하도록 수정
-    private Member user;
+    @JoinColumn(name = "MEMBER_ID")
+    private Member member;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "CREATED_AT", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
