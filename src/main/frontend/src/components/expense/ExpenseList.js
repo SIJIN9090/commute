@@ -4,9 +4,19 @@ import styled from "styled-components";
 
 const ExpenseList = () => {
   const [expenses, setExpenses] = useState([]); // 기본값은 빈 배열
-  const [totalAmount, setTotalAmount] = useState(0);
   const [token, setToken] = useState(null);
+  const [username, setUsername] = useState(""); // 유저 이름 상태 추가
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      setToken(storedToken); // 토큰을 state에 설정
+    } else {
+      // 토큰이 없으면 로그인 페이지로 리디렉션
+      navigate("/login");
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -37,9 +47,6 @@ const ExpenseList = () => {
 
         if (Array.isArray(data)) {
           setExpenses(data); // 경비 항목들 설정
-          setTotalAmount(
-            data.reduce((total, expense) => total + (expense.amount || 0), 0)
-          );
         } else {
           console.error("Received data is not in expected format:", data);
         }
@@ -58,6 +65,33 @@ const ExpenseList = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch("/api/user", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUsername(userData.username); // 유저 이름 설정
+        } else {
+          console.error("Error fetching username");
+        }
+      } catch (error) {
+        console.error("Error fetching username:", error);
+      }
+    };
+
+    fetchUsername();
+  }, [token]);
+
   return (
     <ExpenseContainer>
       <h2>경비 관리</h2>
@@ -68,13 +102,14 @@ const ExpenseList = () => {
               <ExpenseTitle>{expense.title}</ExpenseTitle>
               <ExpenseContent>{expense.content}</ExpenseContent>
               <ExpenseAmount>금액: {expense.amount} 원</ExpenseAmount>
+              <ExpenseAuthor>작성자: {username}</ExpenseAuthor>{" "}
+              {/* 작성자 추가 */}
             </ExpenseItem>
           ))
         ) : (
-          <p>등록된 경비 항목이 없습니다.</p>
+          <p>등록된 게시글이 없습니다.</p>
         )}
       </ExpenseListWrapper>
-      <TotalAmount>전체 합계: {totalAmount} 원</TotalAmount>
       <AddButton onClick={() => navigate("/create")}>+</AddButton>
     </ExpenseContainer>
   );
@@ -117,10 +152,11 @@ const ExpenseAmount = styled.p`
   font-size: 16px;
 `;
 
-const TotalAmount = styled.h3`
-  margin-top: 20px;
-  font-size: 20px;
-  color: #2c3e50;
+const ExpenseAuthor = styled.p`
+  margin-top: 5px;
+  color: #34495e;
+  font-size: 14px;
+  font-style: italic;
 `;
 
 const ExpenseListWrapper = styled.ul`

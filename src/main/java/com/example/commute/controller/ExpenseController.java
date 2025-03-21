@@ -8,7 +8,6 @@ import com.example.commute.repository.MemberRepository;
 import com.example.commute.repository.PhotoRepository;
 import com.example.commute.service.ExpenseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,9 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +42,7 @@ public class ExpenseController {
     public ResponseEntity<Page<ExpenseDto>> getAllExpenses(
             @AuthenticationPrincipal Member member,
             @PageableDefault(size = 10) Pageable pageable) {
+        System.out.println("Fetching all expenses...");
 
         // 관리자는 전체 목록 조회, 일반 사용자는 자신의 목록만 조회
         if (member.isAdmin()) {
