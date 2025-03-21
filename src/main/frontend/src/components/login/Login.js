@@ -1,24 +1,33 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
     try {
       const response = await axios.post("/api/auth/login", {
         username,
         password,
       });
-      localStorage.setItem("token", response.data); // JWT 토큰을 로컬 스토리지에 저장
-      setError("");
-      // 로그인 성공 후, 원하는 페이지로 리디렉션
+      console.log("서버 응답:", response.data);
+
+      const { token } = response.data; // 응답에서 username과 토큰을 받음
+
+      localStorage.setItem("access_token", token); // JWT 토큰을 로컬 스토리지에 저장
+      localStorage.setItem("username", username); // 사용자 이름을 로컬 스토리지에 저장
+
+      setError(""); // 로그인 성공 후, 원하는 페이지로 리디렉션
       window.location.href = "/list";
     } catch (err) {
+      console.log("로그인 실패:", err);
       setError("Invalid credentials!");
     }
   };

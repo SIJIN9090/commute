@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import BackPage from "../BackPage";
@@ -12,29 +12,29 @@ const formatAmount = (amount) => {
 const ExpenseWrite = () => {
   const navigate = useNavigate();
   const [previewImages, setPreviewImages] = useState([]);
+  const [files, setFiles] = useState([]);
   const [expense, setExpense] = useState({
     title: "",
     content: "",
     category: "",
     date: "",
     photoUrls: [],
-    amounts: [{ amount: "" }], // 금액 항목을 빈 값으로 초기화
-    totalAmount: 0, // 전체 합계는 수정 불가하도록 설정
+    amounts: [{ amount: "" }],
+    totalAmount: 0,
   });
 
   // 금액 값 업데이트
   const handleChange = (e, index) => {
     const { value } = e.target;
-    const formattedValue = formatAmount(value); // 포맷팅된 금액 값
-
+    const formattedValue = formatAmount(value);
     const newAmounts = [...expense.amounts];
-    newAmounts[index] = { amount: formattedValue }; // 금액 항목을 업데이트
+    newAmounts[index] = { amount: formattedValue };
     setExpense({ ...expense, amounts: newAmounts });
   };
 
   // 카테고리 변경
   const handleCategoryChange = (category, e) => {
-    e.preventDefault(); // 카테고리 클릭 시 폼 제출을 막기 위한 방법
+    e.preventDefault();
     setExpense({ ...expense, category });
   };
 
@@ -42,7 +42,7 @@ const ExpenseWrite = () => {
   const handleAddAmount = () => {
     setExpense({
       ...expense,
-      amounts: [...expense.amounts, { amount: "" }], // 새 금액 항목을 빈 값으로 추가
+      amounts: [...expense.amounts, { amount: "" }],
     });
   };
 
@@ -54,12 +54,11 @@ const ExpenseWrite = () => {
 
   // 금액 합계 계산
   const calculateTotalAmount = () => {
-    // 금액이 없다면 0을 반환
     const total = expense.amounts.reduce(
       (total, item) => total + (Number(item.amount.replace(/,/g, "")) || 0),
       0
     );
-    return total > 0 ? total : 0; // 금액이 0보다 크면 그 값을, 그렇지 않으면 0을 반환
+    return total > 0 ? total : 0;
   };
 
   // 날짜 변경
@@ -69,65 +68,78 @@ const ExpenseWrite = () => {
 
   // 파일 선택 핸들러
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files); // 여러 파일을 배열로 처리
-    const imageUrls = files.map((file) => URL.createObjectURL(file)); // 미리보기 이미지 URL 생성
+    const selectedFiles = Array.from(e.target.files);
+    const imageUrls = selectedFiles.map((file) => URL.createObjectURL(file));
 
-    setPreviewImages((prevImages) => [...prevImages, ...imageUrls]); // 기존 이미지를 보존하면서 새로운 이미지 추가
+    // 미리보기 이미지 추가
+    setPreviewImages((prevImages) => [...prevImages, ...imageUrls]);
+
+    // 파일 배열 업데이트
+    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+
+    // expense 상태 업데이트
     setExpense((prevExpense) => ({
       ...prevExpense,
-      photoUrls: [...prevExpense.photoUrls, ...files], // 기존 파일들을 보존하면서 새로운 파일 추가
+      photoUrls: [...prevExpense.photoUrls, ...selectedFiles],
     }));
   };
 
   // 폼 제출
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
+    // FormData 생성
+    const formData = new FormData();
+
+    // 금액 합계 계산
     const totalAmount = calculateTotalAmount();
-    if (totalAmount === 0) {
-      alert("금액이 0이어서는 안 됩니다.");
+
+    // expenseDto 객체를 formData에 추가
+    formData.append(
+      "expenseDto",
+      JSON.stringify({
+        title: expense.title,
+        content: expense.content,
+        category: expense.category,
+        date: expense.date,
+        amounts: expense.amounts.map((item) => ({
+          amount: item.amount.replace(/,/g, ""), // 금액에서 쉼표 제거
+        })),
+        totalAmount,
+      })
+    );
+
+    // 파일이 있으면 formData에 추가
+    if (files.length > 0) {
+      files.forEach((file) => formData.append("files", file));
+    }
+
+    // accessToken을 로컬스토리지에서 가져옴
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      console.error("No access token found");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("expenseDto", JSON.stringify({ ...expense, totalAmount }));
-
-    expense.photoUrls.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    const accessToken = localStorage.getItem("access_token");
     try {
-      const response = await fetch("/api/expenses", {
+      const response = await fetch("http://localhost:8080/api/expenses", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`, // Authorization 헤더
         },
-        body: formData,
+        body: formData, // formData를 요청 본문에 첨부
       });
 
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        alert(`서버 오류 발생: ${errorMessage}`);
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Expense created successfully", data);
+        navigate("/list"); // 성공적으로 생성되면 목록 페이지로 이동
+      } else {
+        const errorDetails = await response.text();
+        console.error("Failed to create expense", errorDetails);
       }
-
-      const result = await response.json();
-      alert("게시물이 작성되었습니다.");
-      setExpense({
-        title: "",
-        content: "",
-        category: "",
-        date: "",
-        photoUrls: [],
-        amounts: [{ amount: "" }],
-        totalAmount: 0,
-      });
-      setPreviewImages([]);
-      navigate("/list");
     } catch (error) {
-      console.error("❌ 요청 실패:", error);
-      alert("에러가 발생했습니다. 다시 시도해 주세요.");
+      console.error("Error:", error);
     }
   };
 
@@ -157,9 +169,9 @@ const ExpenseWrite = () => {
           {["식비", "교통", "숙박", "경조사", "기타"].map((category) => (
             <CategoryButton
               key={category}
-              type="button" // 버튼의 타입을 'button'으로 설정하여 폼 제출 방지
+              type="button"
               selected={expense.category === category}
-              onClick={(e) => handleCategoryChange(category, e)} // e.preventDefault() 추가
+              onClick={(e) => handleCategoryChange(category, e)}
             >
               {category}
             </CategoryButton>
@@ -170,10 +182,9 @@ const ExpenseWrite = () => {
         <FileInputWrapper htmlFor="fileInput">+</FileInputWrapper>
         <HiddenInput
           type="file"
-          multiple // 여러 파일 선택 가능
+          multiple
           onChange={handleFileChange}
           id="fileInput"
-          aria-label="파일 선택"
           accept="image/*"
         />
 
@@ -194,8 +205,8 @@ const ExpenseWrite = () => {
           <AmountContainer key={index}>
             <Input
               name="amount"
-              type="text" // 숫자가 아닌 텍스트로 처리
-              value={amountItem.amount || ""} // 0이 아닌 빈 값으로 표시
+              type="text"
+              value={amountItem.amount || ""}
               onChange={(e) => handleChange(e, index)}
               required
             />
@@ -235,6 +246,7 @@ const ExpenseWrite = () => {
   );
 };
 
+// 스타일링
 const FormContainer = styled.div`
   max-width: 400px;
   margin: 0 auto;
@@ -295,15 +307,16 @@ const HiddenInput = styled.input`
 
 const ImagePreviewContainer = styled.div`
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
-  margin-top: 10px;
 `;
 
 const PreviewImage = styled.img`
-  width: 60px;
-  height: 60px;
+  width: 80%;
+  height: auto;
   object-fit: cover;
-  border-radius: 6px;
+  margin: 0 auto;
 `;
 
 const AmountContainer = styled.div`
@@ -326,7 +339,7 @@ const AddButton = styled.button`
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 10px 0;
+  padding: 10px;
   border-radius: 6px;
   cursor: pointer;
 `;
@@ -335,8 +348,8 @@ const SubmitButton = styled.button`
   margin-top: 20px;
   background-color: #28a745;
   color: white;
+  padding: 10px;
   border: none;
-  padding: 12px;
   border-radius: 6px;
   cursor: pointer;
 `;

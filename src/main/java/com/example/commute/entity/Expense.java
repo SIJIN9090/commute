@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -20,23 +21,22 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "TITLE" , nullable = false, length = 100)
+    @Column(name = "TITLE", nullable = false, length = 100)
     private String title;
 
-    @Column(name = "CONTENT" , nullable = false, length = 500)
+    @Column(name = "CONTENT", nullable = false, length = 500)
     private String content;
 
-    @Column(name = "AMOUNT" ,nullable = false)
+    @Column(name = "AMOUNT", nullable = false)
     private Double amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "CATEGORY" , nullable = false)
+    @Column(name = "CATEGORY", nullable = false)
     private Category category;
 
-    @ElementCollection
-    @CollectionTable(name = "EXPENSE_PHOTOS", joinColumns = @JoinColumn(name = "EXPENSE_ID"))
-    @Column(name = "PHOTO_URL", length = 255)
-    private List<String> photoUrls;
+    // photo로 이름 변경
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Photo> photos;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "MEMBER_ID")
@@ -60,4 +60,13 @@ public class Expense {
         경조사,
         기타
     }
+    public String getMemberUsername() {
+        return this.member.getUsername();
+    }
+
+    public long getImageCount() {
+        return photos != null ? photos.size() : 0; // photos가 null이 아니면 그 크기, null이면 0 반환
+    }
+
+
 }

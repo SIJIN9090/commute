@@ -1,6 +1,7 @@
 package com.example.commute.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +11,9 @@ import java.util.List;
 
 @Data
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ExpenseDto {
+
     private Long id;
     private String title;
     private String category;
@@ -18,7 +21,7 @@ public class ExpenseDto {
     private List<String> photoUrls;
     private Double totalAmount;
     private LocalDateTime createdAt;
-    private String name;
+    private String username;
     private String date;
     private List<AmountDto> amounts; // amounts 필드 추가
 
@@ -31,9 +34,9 @@ public class ExpenseDto {
             @JsonProperty("photoUrls") List<String> photoUrls,
             @JsonProperty("totalAmount") Double totalAmount,
             @JsonProperty("createdAt") LocalDateTime createdAt,
-            @JsonProperty("name") String name,
+            @JsonProperty("username") String username,
             @JsonProperty("date") String date,
-            @JsonProperty("amounts") List<AmountDto> amounts // amounts 필드 추가
+            @JsonProperty("amounts") List<AmountDto> amounts
     ) {
         this.id = id;
         this.title = title;
@@ -42,8 +45,9 @@ public class ExpenseDto {
         this.photoUrls = photoUrls;
         this.totalAmount = totalAmount;
         this.createdAt = createdAt;
-        this.name = name;
+        this.username = username; // 필드명 변경에 맞춰 수정
         this.date = date;
         this.amounts = amounts; // amounts 필드 초기화
     }
+
 }

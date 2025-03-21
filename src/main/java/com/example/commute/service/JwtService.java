@@ -1,12 +1,9 @@
 package com.example.commute.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -14,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
@@ -43,17 +41,19 @@ public class JwtService {
     // JWT 토큰 생성
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>(extraClaims);
-        claims.put("roles", userDetails.getAuthorities());
+        // 권한 정보를 roles 리스트로만 처리
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(auth -> auth.getAuthority()) // GrantedAuthority -> String으로 변경
+                .collect(Collectors.toList()));
 
-        // SecretKey를 생성하는 방법 (비밀 키를 직접 지정할 수 있음)
-        SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes());  // secret은 String으로 사용
+        SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes());
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(secretKey, SignatureAlgorithm.HS256)  // 서명 방식 변경
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -75,10 +75,9 @@ public class JwtService {
 
     // 토큰에서 Claims 추출
     private Claims extractAllClaims(String token) {
-        // 최신 버전에서는 parserBuilder를 사용하여 SecretKey로 검증해야 함
         SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes());
-        return Jwts.parserBuilder() // parserBuilder 사용
-                .setSigningKey(secretKey) // SecretKey 사용
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -89,17 +88,17 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // 토큰의 유효성 검사 (기본적으로 단순히 검증만)
+    // 토큰의 유효성 검사
     public boolean validateToken(String token) {
         try {
-            // 최신 버전에서는 parserBuilder를 사용하여 SecretKey로 검증
             SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes());
             Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
+        } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException
+                 | SignatureException | IllegalArgumentException e) {
             return false;
         }
     }

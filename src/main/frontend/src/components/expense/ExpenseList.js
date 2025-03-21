@@ -3,17 +3,15 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 const ExpenseList = () => {
-  const [expenses, setExpenses] = useState([]); // 기본값은 빈 배열로 설정
+  const [expenses, setExpenses] = useState([]); // 기본값은 빈 배열
   const [totalAmount, setTotalAmount] = useState(0);
+  const [token, setToken] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchExpenses = async () => {
-      const token = localStorage.getItem("token"); // 로컬 스토리지에서 JWT 토큰 가져오기
-
       if (!token) {
-        console.error("No token found. Redirecting to login.");
-        navigate("/login");
+        console.error("No token found.");
         return;
       }
 
@@ -21,15 +19,13 @@ const ExpenseList = () => {
         const response = await fetch("/api/expenses", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`, // Authorization 헤더에 토큰 추가
-            "Content-Type": "application/json", // JSON 응답을 받기 위한 설정
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
 
         if (response.status === 403) {
-          console.error("403 Forbidden: You do not have permission.");
-          alert("접근 권한이 없습니다. 로그인 후 다시 시도해주세요.");
-          navigate("/login");
+          alert("접근 권한이 없습니다.");
           return;
         }
 
@@ -40,12 +36,9 @@ const ExpenseList = () => {
         const data = await response.json();
 
         if (Array.isArray(data)) {
-          setExpenses(data); // 배열이면 바로 설정
+          setExpenses(data); // 경비 항목들 설정
           setTotalAmount(
-            data.reduce(
-              (total, expense) => total + (expense.amount || 0), // `amount`가 숫자라고 가정
-              0
-            )
+            data.reduce((total, expense) => total + (expense.amount || 0), 0)
           );
         } else {
           console.error("Received data is not in expected format:", data);
@@ -56,13 +49,20 @@ const ExpenseList = () => {
     };
 
     fetchExpenses();
-  }, [navigate]); // `navigate`가 변경될 때만 실행
+  }, [token]); // token 변경될 때마다 fetchExpenses 실행
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
 
   return (
     <ExpenseContainer>
       <h2>경비 관리</h2>
       <ExpenseListWrapper>
-        {expenses && expenses.length > 0 ? (
+        {expenses.length > 0 ? (
           expenses.map((expense) => (
             <ExpenseItem key={expense.id}>
               <ExpenseTitle>{expense.title}</ExpenseTitle>
