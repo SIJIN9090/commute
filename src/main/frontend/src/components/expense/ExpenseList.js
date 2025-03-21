@@ -3,74 +3,29 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 const ExpenseList = () => {
-  const [expenses, setExpenses] = useState([]); // 기본값은 빈 배열
+  const [expenses, setExpenses] = useState([]);
   const [token, setToken] = useState(null);
-  const [username, setUsername] = useState(""); // 유저 이름 상태 추가
+  const [username, setUsername] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-    if (storedToken) {
-      setToken(storedToken); // 토큰을 state에 설정
-    } else {
-      // 토큰이 없으면 로그인 페이지로 리디렉션
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      if (!token) {
-        console.error("No token found.");
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/expenses", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.status === 403) {
-          alert("접근 권한이 없습니다.");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Error fetching expenses: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setExpenses(data); // 경비 항목들 설정
-        } else {
-          console.error("Received data is not in expected format:", data);
-        }
-      } catch (error) {
-        console.error("Error fetching expenses:", error);
-      }
-    };
-
-    fetchExpenses();
-  }, [token]); // token 변경될 때마다 fetchExpenses 실행
-
+  // token 관리 useEffect
   useEffect(() => {
     const storedToken = localStorage.getItem("access_token");
     if (storedToken) {
       setToken(storedToken);
+    } else {
+      navigate("/login");
     }
-  }, []);
+  }, [navigate]);
 
+  // 경비 목록과 유저 정보 fetch
   useEffect(() => {
-    const fetchUsername = async () => {
-      if (!token) return;
+    if (!token) return; // 토큰이 없으면 API 요청을 하지 않음
 
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/user", {
+        // 경비 목록 불러오기
+        const expenseResponse = await fetch("/api/expenses", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -78,19 +33,39 @@ const ExpenseList = () => {
           },
         });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUsername(userData.username); // 유저 이름 설정
+        if (expenseResponse.ok) {
+          const expenseData = await expenseResponse.json();
+          if (Array.isArray(expenseData)) {
+            setExpenses(expenseData);
+          } else {
+            console.error("Invalid expenses data format", expenseData);
+          }
+        } else {
+          console.error("Error fetching expenses:", expenseResponse.status);
+        }
+
+        // 유저 정보 불러오기
+        const userResponse = await fetch("/api/user", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUsername(userData.username);
         } else {
           console.error("Error fetching username");
         }
       } catch (error) {
-        console.error("Error fetching username:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchUsername();
-  }, [token]);
+    fetchData();
+  }, [token]); // token이 변경될 때마다 fetchData 함수 호출
 
   return (
     <ExpenseContainer>
@@ -102,8 +77,7 @@ const ExpenseList = () => {
               <ExpenseTitle>{expense.title}</ExpenseTitle>
               <ExpenseContent>{expense.content}</ExpenseContent>
               <ExpenseAmount>금액: {expense.amount} 원</ExpenseAmount>
-              <ExpenseAuthor>작성자: {username}</ExpenseAuthor>{" "}
-              {/* 작성자 추가 */}
+              <ExpenseAuthor>작성자: {username}</ExpenseAuthor>
             </ExpenseItem>
           ))
         ) : (
