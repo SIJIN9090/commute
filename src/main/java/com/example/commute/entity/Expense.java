@@ -20,17 +20,17 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "TITLE" , nullable = false, length = 100)
     private String title;
 
-    @Column(nullable = false, length = 500)
+    @Column(name = "CONTENT" , nullable = false, length = 500)
     private String content;
 
-    @Column(nullable = false)
+    @Column(name = "AMOUNT" ,nullable = false)
     private Double amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "CATEGORY" , nullable = false)
     private Category category;
 
     @ElementCollection

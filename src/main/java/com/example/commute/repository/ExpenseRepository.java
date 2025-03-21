@@ -12,7 +12,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     Page<Expense> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     // 특정 사용자의 비용 목록 조회 (페이지네이션 추가)
-    Page<Expense> findByUser(Member user, Pageable pageable);
+    Page<Expense> findByMember(Member member, Pageable pageable);
 
     // 카테고리로 필터링하는 메서드 (페이지네이션 추가)
     public Page<Expense> findByCategory(Expense.Category category, Pageable pageable);

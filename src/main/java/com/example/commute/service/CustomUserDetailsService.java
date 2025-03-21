@@ -1,7 +1,7 @@
 package com.example.commute.service;
 
 import com.example.commute.entity.Member;
-import com.example.commute.repository.memberRepository;
+import com.example.commute.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +15,7 @@ import java.util.Collections;
 public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private memberRepository userRepository;
+    private MemberRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

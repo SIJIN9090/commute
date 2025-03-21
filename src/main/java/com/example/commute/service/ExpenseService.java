@@ -4,7 +4,7 @@ import com.example.commute.dto.ExpenseDto;
 import com.example.commute.entity.Expense;
 import com.example.commute.entity.Member;
 import com.example.commute.repository.ExpenseRepository;
-import com.example.commute.repository.memberRepository;
+import com.example.commute.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
-    private final memberRepository userRepository;
+    private final MemberRepository memberRepository;
 
     // 모든 게시글 목록 조회 (페이지네이션 추가)
     public Page<ExpenseDto> getAllExpenses(Pageable pageable) {
@@ -30,11 +30,11 @@ public class ExpenseService {
     }
 
     // 특정 사용자가 작성한 게시글 목록 조회 (페이지네이션 추가)
-    public Page<ExpenseDto> getUserExpenses(Member user, Pageable pageable) {
-        if (user == null) {
+    public Page<ExpenseDto> getMemberExpenses(Member member, Pageable pageable) {
+        if (member == null) {
             throw new IllegalArgumentException("유효한 사용자 정보가 없습니다.");
         }
-        Page<Expense> expenses = expenseRepository.findByUser(user, pageable);
+        Page<Expense> expenses = expenseRepository.findByMember(member, pageable);
         return expenses.map(this::convertToDto);
     }
 
@@ -44,19 +44,18 @@ public class ExpenseService {
         return expenses.map(this::convertToDto);
     }
 
-
     // 게시글 작성
-    public ExpenseDto createExpense(ExpenseDto expenseDto, Member user) {
+    public ExpenseDto createExpense(ExpenseDto expenseDto, Member member) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
         }
 
-        if (user == null || user.getId() == null) {
+        if (member == null || member.getId() == null) {
             throw new IllegalArgumentException("사용자 정보가 누락되었습니다.");
         }
 
-        if (!userRepository.existsById(user.getId())) {
+        if (!memberRepository.existsById(member.getId())) {
             throw new IllegalArgumentException("존재하지 않는 사용자입니다.");
         }
 
@@ -65,7 +64,7 @@ public class ExpenseService {
         expense.setCategory(Expense.Category.valueOf(expenseDto.getCategory()));
         expense.setContent(expenseDto.getContent());
         expense.setAmount(expenseDto.getTotalAmount());
-        expense.setUser(user);
+        expense.setMember(member);
 
         // photoUrls가 null이 아니면 설정
         if (expenseDto.getPhotoUrls() != null && !expenseDto.getPhotoUrls().isEmpty()) {
@@ -78,11 +77,11 @@ public class ExpenseService {
     }
 
     // 게시글 수정
-    public ExpenseDto updateExpense(Long id, ExpenseDto expenseDto, Member user) {
+    public ExpenseDto updateExpense(Long id, ExpenseDto expenseDto, Member member) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
-        if (!expense.getUser().equals(user)) {
+        if (!expense.getMember().equals(member)) {
             throw new IllegalArgumentException("작성자만 게시글을 수정할 수 있습니다.");
         }
 
@@ -101,11 +100,11 @@ public class ExpenseService {
     }
 
     // 게시글 삭제
-    public void deleteExpense(Long id, Member user) {
+    public void deleteExpense(Long id, Member member) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
-        if (!expense.getUser().equals(user)) {
+        if (!expense.getMember().equals(member)) {
             throw new IllegalArgumentException("작성자만 게시글을 삭제할 수 있습니다.");
         }
 

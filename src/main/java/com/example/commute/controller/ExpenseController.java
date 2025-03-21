@@ -33,13 +33,13 @@ public class ExpenseController {
     // 게시글 목록 조회 (관리자는 전체 목록, 일반 사용자는 자신만 조회)
     @GetMapping
     public ResponseEntity<Page<ExpenseDto>> getAllExpenses(
-            @AuthenticationPrincipal Member user,
+            @AuthenticationPrincipal Member member,
             @PageableDefault(size = 10) Pageable pageable) {  // Pageable을 자동으로 주입받음
 
-        if (user.isAdmin()) {
+        if (member.isAdmin()) {
             return ResponseEntity.ok(expenseService.getAllExpenses(pageable));  // 관리자면 전체 목록 조회
         } else {
-            return ResponseEntity.ok(expenseService.getUserExpenses(user, pageable));  // 일반 사용자는 자신만 조회
+            return ResponseEntity.ok(expenseService.getMemberExpenses(member, pageable));  // 일반 사용자는 자신만 조회
         }
     }
 
@@ -48,7 +48,7 @@ public class ExpenseController {
     public ResponseEntity<ExpenseDto> createExpense(
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @RequestParam("expenseDto") String expenseDtoJson,
-            @AuthenticationPrincipal Member user) throws IOException {
+            @AuthenticationPrincipal Member member) throws IOException {
 
         ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
         if (expenseDto.getTotalAmount() == null) {
@@ -66,7 +66,7 @@ public class ExpenseController {
             expenseDto.setPhotoUrls(photoUrls);
         }
 
-        ExpenseDto createdExpense = expenseService.createExpense(expenseDto, user);
+        ExpenseDto createdExpense = expenseService.createExpense(expenseDto, member);  // 수정된 부분
         return ResponseEntity.ok(createdExpense);
     }
 
@@ -82,7 +82,7 @@ public class ExpenseController {
             @PathVariable Long id,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("expenseDto") String expenseDtoJson,
-            @AuthenticationPrincipal Member user) throws IOException {
+            @AuthenticationPrincipal Member member) throws IOException {
 
         ExpenseDto expenseDto = convertJsonToExpenseDto(expenseDtoJson);
         ExpenseDto existingExpense = expenseService.getExpenseById(id);
@@ -94,17 +94,16 @@ public class ExpenseController {
             expenseDto.setPhotoUrls(existingExpense.getPhotoUrls()); // 기존 사진 URL 유지
         }
 
-        return ResponseEntity.ok(expenseService.updateExpense(id, expenseDto, user));
+        return ResponseEntity.ok(expenseService.updateExpense(id, expenseDto, member));  // 수정된 부분
     }
-
 
     // 게시글 삭제 (관리자만 삭제 가능)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @AuthenticationPrincipal Member user) {
-        if (!user.isAdmin()) {
+    public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @AuthenticationPrincipal Member member) {
+        if (!member.isAdmin()) {
             return ResponseEntity.status(401).build();  // 401 Unauthorized
         }
-        expenseService.deleteExpense(id, user);
+        expenseService.deleteExpense(id, member);  // 수정된 부분
         return ResponseEntity.noContent().build();
     }
 
@@ -123,6 +122,7 @@ public class ExpenseController {
         Page<ExpenseDto> expenses = expenseService.getExpensesByCategory(Expense.Category.valueOf(category), pageable);
         return ResponseEntity.ok(expenses);
     }
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
